@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+instance/
+dist/
+node_modules/
+.next/
+out/
+.vite/
+.DS_Store
+Thumbs.db
+*.log
+*.sqlite3
+.vercel
+
+# Secrets. The .example files are documentation and must stay tracked.
+.env*
+!.env.example
+!**/.env.example

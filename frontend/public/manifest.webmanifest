@@ -1,0 +1,19 @@
+{
+  "name": "Kipato — Your money. Your record.",
+  "short_name": "Kipato",
+  "description": "Log daily earnings and turn them into a record a SACCO or lender will accept.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafafa",
+  "theme_color": "#ffd800",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

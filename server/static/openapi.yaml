@@ -1,0 +1,396 @@
+openapi: 3.0.3
+info:
+  title: Kipato API
+  version: 1.0.0
+  description: Backend API for Kipato - gig-worker income record
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service healthy
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new worker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, full_name, password]
+              properties:
+                phone: { type: string }
+                full_name: { type: string }
+                password: { type: string }
+                email: { type: string, format: email }
+      responses:
+        "201": { description: Registered }
+        "400": { description: Validation error }
+        "409": { description: Phone or email already registered }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login worker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone: { type: string }
+                password: { type: string }
+      responses:
+        "200": { description: Logged in }
+        "401": { description: Invalid credentials }
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout worker
+      responses:
+        "200": { description: Logged out }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      responses:
+        "200": { description: Current user }
+        "401": { description: Not authenticated }
+
+    patch:
+      tags: [Auth]
+      summary: Update the current worker's name or email
+      description: >
+        Changing the email clears the verified flag, since a new address has not
+        been proven yet.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+      responses:
+        "200": { description: Updated user }
+        "400": { description: Validation error }
+        "401": { description: Not authenticated }
+        "409": { description: Email already registered }
+
+  /api/auth/verify/request:
+    post:
+      tags: [Auth]
+      summary: Send a verification token to the worker's email
+      description: >
+        The token is emailed when SMTP is configured; otherwise it is logged. In
+        debug builds it is also returned in the response so the flow is testable.
+      responses:
+        "200": { description: Verification email sent }
+        "400": { description: No email address on the account }
+        "401": { description: Not authenticated }
+
+  /api/auth/verify/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm an email verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        "200": { description: Email verified }
+        "400": { description: Missing, invalid or expired token }
+        "401": { description: Not authenticated }
+
+  /api/income/entries:
+    get:
+      tags: [Income]
+      summary: List income entries
+      parameters:
+        - in: query
+          name: start_date
+          schema: { type: string, format: date }
+        - in: query
+          name: end_date
+          schema: { type: string, format: date }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        "200": { description: Paginated entries }
+        "401": { description: Not authenticated }
+    post:
+      tags: [Income]
+      summary: Create income entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, date]
+              properties:
+                amount: { type: number }
+                date: { type: string, format: date }
+                method: { type: string, enum: [cash, mpesa] }
+                note: { type: string }
+                client_uuid:
+                  type: string
+                  description: >
+                    Idempotency key for entries logged offline. Re-sending an
+                    entry with a client_uuid that already exists returns the
+                    stored entry with 200 instead of creating a duplicate.
+      responses:
+        "201": { description: Created }
+        "200": { description: Entry with this client_uuid already existed }
+        "400": { description: Validation error }
+        "401": { description: Not authenticated }
+
+  /api/income/entries/{entry_id}:
+    get:
+      tags: [Income]
+      parameters:
+        - in: path
+          name: entry_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Entry }
+        "401": { description: Not authenticated }
+        "404": { description: Not found }
+    patch:
+      tags: [Income]
+      parameters:
+        - in: path
+          name: entry_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Updated }
+        "401": { description: Not authenticated }
+        "404": { description: Not found }
+    delete:
+      tags: [Income]
+      parameters:
+        - in: path
+          name: entry_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Deleted }
+        "401": { description: Not authenticated }
+        "404": { description: Not found }
+
+  /api/income/trends:
+    get:
+      tags: [Income]
+      summary: Get income trends
+      responses:
+        "200": { description: Trends }
+        "401": { description: Not authenticated }
+
+  /api/mpesa/imports:
+    get:
+      tags: [M-PESA]
+      summary: List M-PESA imports
+      responses:
+        "200": { description: Imports list }
+        "401": { description: Not authenticated }
+    post:
+      tags: [M-PESA]
+      summary: Import M-PESA records
+      description: >
+        Imports M-PESA history. `raw_text` may be pasted messages, an SMS Backup
+        & Restore XML export, or an M-PESA statement CSV; the format is detected
+        automatically and reported back. Only incoming money becomes an income
+        entry; sent, paid and withdrawn messages are ignored. Entries are keyed
+        by their M-PESA transaction code, so re-importing the same export
+        creates nothing new. Accepts up to 8 MB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_ref, raw_text]
+              properties:
+                source_ref: { type: string }
+                raw_text: { type: string }
+                file_name: { type: string }
+                note: { type: string }
+      responses:
+        "201":
+          description: >
+            Imported. The body carries parsed_count, created_count and
+            duplicate_count alongside the import record.
+        "400": { description: Validation error }
+        "401": { description: Not authenticated }
+
+  /api/mpesa/imports/preview:
+    post:
+      tags: [M-PESA]
+      summary: Parse M-PESA text or an export without saving anything
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 200, maximum: 1000 }
+          description: How many parsed entries to return; `count` is always the full total.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [raw_text]
+              properties:
+                raw_text: { type: string }
+      responses:
+        "200":
+          description: >
+            Parsed entries with code, amount, date and sender, plus `count`,
+            `truncated` and the detected `format` (xml, csv or text).
+        "400": { description: Validation error }
+        "401": { description: Not authenticated }
+
+  /api/statements/:
+    get:
+      tags: [Statements]
+      summary: List statements
+      responses:
+        "200": { description: Statements list }
+        "401": { description: Not authenticated }
+    post:
+      tags: [Statements]
+      summary: Generate statement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_date, end_date]
+              properties:
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+      responses:
+        "201": { description: Statement created }
+        "400": { description: Validation error }
+        "401": { description: Not authenticated }
+
+  /api/statements/{statement_id}:
+    get:
+      tags: [Statements]
+      parameters:
+        - in: path
+          name: statement_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Statement with entries }
+        "401": { description: Not authenticated }
+        "404": { description: Not found }
+
+  /api/admin/workers:
+    get:
+      tags: [Admin]
+      summary: List workers with their income totals
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Matches name, phone or email.
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        "200": { description: Paginated workers }
+        "401": { description: Not authenticated }
+        "403": { description: Admin access required }
+
+  /api/admin/workers/{worker_id}:
+    get:
+      tags: [Admin]
+      summary: Get one worker with record totals
+      parameters:
+        - in: path
+          name: worker_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Worker detail }
+        "401": { description: Not authenticated }
+        "403": { description: Admin access required }
+        "404": { description: Worker not found }
+
+  /api/admin/workers/{worker_id}/entries:
+    get:
+      tags: [Admin]
+      summary: Read a worker's income entries for verification
+      parameters:
+        - in: path
+          name: worker_id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: start_date
+          schema: { type: string, format: date }
+        - in: query
+          name: end_date
+          schema: { type: string, format: date }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        "200": { description: Paginated entries }
+        "400": { description: Invalid date filter }
+        "401": { description: Not authenticated }
+        "403": { description: Admin access required }
+        "404": { description: Worker not found }
+
+  /api/admin/workers/{worker_id}/statements:
+    get:
+      tags: [Admin]
+      summary: List a worker's generated statements
+      parameters:
+        - in: path
+          name: worker_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Statements list }
+        "401": { description: Not authenticated }
+        "403": { description: Admin access required }
+        "404": { description: Worker not found }
+
+  /api/admin/stats:
+    get:
+      tags: [Admin]
+      summary: Platform totals
+      responses:
+        "200": { description: Worker, entry, import and statement counts }
+        "401": { description: Not authenticated }
+        "403": { description: Admin access required }

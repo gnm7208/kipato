@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": { "includeFiles": "server/**" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    {
+      "src": "/(.*\\.(?:js|mjs|css|map|svg|png|jpg|jpeg|gif|webp|ico|json|webmanifest|txt|woff|woff2|ttf))",
+      "dest": "/frontend/$1"
+    },
+    { "src": "/(.*)", "dest": "/frontend/index.html" }
+  ]
+}

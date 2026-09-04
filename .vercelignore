@@ -1,0 +1,20 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+.kombai
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+server/tests
+docker-compose.yml
+Dockerfile
+docker-entrypoint.sh
+frontend/.env.local
+frontend/.env.development
+.env
+
+# Config for ruff and pytest only. Vercel's Python builder tries to `uv lock`
+# any pyproject.toml it finds, so keep it out and let requirements.txt drive.
+pyproject.toml

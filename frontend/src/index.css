@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #fafafa;
+  --color-paper: #ffffff;
+  --color-ink: #111111;
+  --color-sun: #ffd800;
+  --color-jade: #03c03c;
+  --color-muted: #6b6b65;
+  --color-soft-line: #deded8;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+}
+
+@utility hard-border {
+  border: 3px solid var(--color-ink);
+}
+
+@utility hard-shadow {
+  box-shadow: 4px 4px 0 var(--color-ink);
+}
+
+@utility hard-shadow-sun {
+  box-shadow: 4px 4px 0 var(--color-sun);
+}
+
+@utility dashed-border {
+  border: 2px dashed var(--color-muted);
+}
+
+@utility safe-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@utility safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@layer base {
+  :root {
+    color: var(--color-ink);
+    background: var(--color-canvas);
+    font-family: var(--font-body);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    min-height: 100%;
+    background: var(--color-canvas);
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100svh;
+    margin: 0;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    color: var(--color-ink);
+    background: var(--color-sun);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-jade);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .statement-perforated {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .statement-perforated::before,
+  .statement-perforated::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0.55rem;
+    content: "";
+    background-image: radial-gradient(circle at 50% 0.5rem, var(--color-canvas) 0 0.25rem, transparent 0.3rem);
+    background-repeat: repeat-y;
+    background-size: 0.55rem 1.1rem;
+    z-index: 2;
+  }
+
+  .statement-perforated::before {
+    left: -0.35rem;
+  }
+
+  .statement-perforated::after {
+    right: -0.35rem;
+  }
+
+  .barcode {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--color-ink) 0 2px,
+      transparent 2px 4px,
+      var(--color-ink) 4px 5px,
+      transparent 5px 8px,
+      var(--color-ink) 8px 11px,
+      transparent 11px 13px
+    );
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-area {
+    display: block !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .statement-perforated {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

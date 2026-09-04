@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: kipato
+      POSTGRES_USER: kipato
+      POSTGRES_PASSWORD: kipato
+    ports:
+      # 5433 on the host so the container never fights a local Postgres on 5432.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kipato -d kipato"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    # The entrypoint runs migrations and seeds roles first; this overrides the
+    # image's gunicorn CMD with the reloading dev server.
+    command: python server/app.py
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://kipato:kipato@db:5432/kipato
+      SECRET_KEY: dev-secret-key-change-in-production
+      FLASK_DEBUG: "true"
+      # 5173 is `npm run dev`, 4173 is `npm run preview` (production build).
+      FRONTEND_ORIGINS: http://localhost:5173,http://localhost:4173
+    volumes:
+      - ./server:/app/server
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
