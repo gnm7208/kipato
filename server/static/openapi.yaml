@@ -98,6 +98,7 @@ paths:
         "200": { description: Verification email sent }
         "400": { description: No email address on the account }
         "401": { description: Not authenticated }
+        "503": { description: Email is not configured on this deployment }
 
   /api/auth/verify/confirm:
     post:
@@ -116,6 +117,46 @@ paths:
         "200": { description: Email verified }
         "400": { description: Missing, invalid or expired token }
         "401": { description: Not authenticated }
+
+  /api/auth/password/forgot:
+    post:
+      tags: [Auth]
+      summary: Start a password reset
+      description: >
+        Always answers the same way whether or not the phone is registered, so
+        the endpoint cannot be used to discover which numbers have accounts.
+        Returns 503 when the deployment has no mail server configured.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+      responses:
+        "200": { description: Accepted, whether or not an account matched }
+        "503": { description: Email is not configured on this deployment }
+
+  /api/auth/password/reset:
+    post:
+      tags: [Auth]
+      summary: Set a new password with a reset token
+      description: Tokens are single-use and expire after one hour.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        "200": { description: Password updated, and the user is signed in }
+        "400": { description: Missing, invalid or expired token, or a weak password }
 
   /api/income/entries:
     get:
@@ -307,6 +348,66 @@ paths:
         "200": { description: Statement with entries }
         "401": { description: Not authenticated }
         "404": { description: Not found }
+
+  /api/statements/{statement_id}/share:
+    post:
+      tags: [Statements]
+      summary: Create a link a lender can open
+      description: >
+        Produces an unguessable token the worker can hand to a SACCO or lender.
+        Sharing again rotates the token, so any previous link stops working.
+      parameters:
+        - in: path
+          name: statement_id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expires_in_days:
+                  type: integer
+                  default: 30
+                  minimum: 1
+                  maximum: 180
+      responses:
+        "200": { description: Share token and the path to view it }
+        "400": { description: expires_in_days out of range }
+        "401": { description: Not authenticated }
+        "404": { description: Not this worker's statement }
+    delete:
+      tags: [Statements]
+      summary: Stop sharing a statement
+      parameters:
+        - in: path
+          name: statement_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Sharing stopped; the old link no longer works }
+        "401": { description: Not authenticated }
+        "404": { description: Not this worker's statement }
+
+  /api/statements/shared/{token}:
+    get:
+      tags: [Statements]
+      summary: Read a shared statement (public)
+      description: >
+        Deliberately unauthenticated — this is what a lender opens. Returns only
+        what proves the income claim: the period, the total, the entries, and
+        the worker's name and phone. Nothing else about the account is exposed.
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: The statement, the worker's identity, and the entries }
+        "404": { description: Unknown or revoked token }
+        "410": { description: The link has expired }
 
   /api/admin/workers:
     get:

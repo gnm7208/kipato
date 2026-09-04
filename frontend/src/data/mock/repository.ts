@@ -389,6 +389,35 @@ export function createMockRepository(): KipatoRepository {
         persist()
         return clone(statement)
       },
+      async shareStatement(id: number, expiresInDays = 30) {
+        await pause()
+        requireSession()
+        const statement = state.statements.find((candidate) => candidate.id === id)
+        if (!statement) throw new ApiError('Resource not found', 404)
+        const token = `demo-${Math.random().toString(36).slice(2, 12)}`
+        statement.share_token = token
+        statement.share_active = true
+        statement.share_expires_at = new Date(
+          Date.now() + expiresInDays * 24 * 60 * 60 * 1000,
+        ).toISOString()
+        persist()
+        return {
+          message: 'Statement shared',
+          statement: clone(statement),
+          share_path: `/s/${token}`,
+        }
+      },
+      async revokeShare(id: number) {
+        await pause()
+        requireSession()
+        const statement = state.statements.find((candidate) => candidate.id === id)
+        if (!statement) throw new ApiError('Resource not found', 404)
+        statement.share_token = null
+        statement.share_active = false
+        statement.share_expires_at = null
+        persist()
+        return { message: 'Sharing stopped', statement: clone(statement) }
+      },
       async getStatement(id: number) {
         await pause()
         requireSession()

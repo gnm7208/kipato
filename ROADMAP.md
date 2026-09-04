@@ -27,11 +27,12 @@
 
 ## Sprint 3: Scoring (beyond MVP)
 - [ ] Creditworthiness score model
-- [ ] Opt-in sharing to SACCO
+- [x] Opt-in sharing to SACCO (revocable, expiring statement links)
 - [ ] Savings nudges
 
 ## Known gaps
-- Statement sharing links to a page only the signed-in worker can open; a real
-  shareable proof needs a public, revocable statement link.
 - Bulk import reads a file the worker supplies. Reading the SMS inbox directly
   would need a native Android app; no browser API exists.
+- Email verification and password reset need SMTP credentials the deployment
+  does not have yet; both refuse with 503 rather than pretending to send.
+- The password reset flow has no UI yet — the endpoints exist and are tested.

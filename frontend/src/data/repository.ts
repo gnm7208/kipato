@@ -20,6 +20,7 @@ import type {
   MpesaImportPayload,
   MpesaImportResult,
   RegisterPayload,
+  ShareResponse,
   Statement,
   StatementDetail,
   StatementPayload,
@@ -50,6 +51,8 @@ export interface KipatoRepository {
     listStatements(): Promise<{ statements: Statement[] }>
     createStatement(payload: StatementPayload): Promise<Statement>
     getStatement(id: number): Promise<StatementDetail>
+    shareStatement(id: number, expiresInDays?: number): Promise<ShareResponse>
+    revokeShare(id: number): Promise<{ message: string; statement: Statement }>
   }
   admin: {
     getStats(): Promise<AdminStats>

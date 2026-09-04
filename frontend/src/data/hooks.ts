@@ -126,3 +126,14 @@ export function useAdminWorkerStatements(id: number | undefined) {
     enabled: id !== undefined,
   })
 }
+
+export function useShareStatement() {
+  return useMutation({
+    mutationFn: ({ id, expiresInDays }: { id: number; expiresInDays?: number }) =>
+      repository.statements.shareStatement(id, expiresInDays),
+  })
+}
+
+export function useRevokeStatementShare() {
+  return useMutation({ mutationFn: (id: number) => repository.statements.revokeShare(id) })
+}

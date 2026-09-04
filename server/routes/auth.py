@@ -7,7 +7,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from server.extensions import db, limiter
 from server.models import Role, User
 from server.rbac import login_required
-from server.utils.mailer import send_email
+from server.utils.mailer import email_is_configured, send_email
 from server.utils.timeutils import now_utc
 from server.utils.validators import (
     validate_email,
@@ -22,7 +22,9 @@ RATE_LIMIT = "15 per minute"
 LOGIN_RATE_LIMIT = "5 per minute"
 REGISTER_RATE_LIMIT = "3 per minute"
 VERIFY_RATE_LIMIT = "5 per minute"
+RESET_RATE_LIMIT = "5 per minute"
 VERIFICATION_TTL = timedelta(hours=24)
+RESET_TTL = timedelta(hours=1)
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -152,6 +154,10 @@ def request_verification():
         return jsonify({"error": "Add an email address before requesting verification"}), 400
     if user.email_verified:
         return jsonify({"message": "Email is already verified"}), 200
+    if not email_is_configured() and not current_app.config.get("FLASK_DEBUG"):
+        return jsonify({
+            "error": "Email verification is not available on this deployment",
+        }), 503
 
     token = secrets.token_urlsafe(32)
     user.verification_token = token
@@ -197,5 +203,83 @@ def confirm_verification():
 
     return jsonify({
         "message": "Email verified",
+        "user": user.to_dict(include_email=True),
+    }), 200
+
+
+@auth_bp.route("/password/forgot", methods=["POST"])
+@limiter.limit(RESET_RATE_LIMIT)
+def forgot_password():
+    """Start a password reset.
+
+    Always answers the same way, whether or not the phone is registered: a
+    different answer would tell a stranger which numbers have accounts.
+    """
+    if not email_is_configured() and not current_app.config.get("FLASK_DEBUG"):
+        return jsonify({
+            "error": "Password reset is not available on this deployment",
+        }), 503
+
+    data = request.get_json() or {}
+    phone = (data.get("phone") or "").strip()
+
+    generic = {"message": "If that account exists and has an email, a reset link is on its way"}
+
+    user = User.query.filter_by(phone=phone).first() if phone else None
+    if not user or not user.email:
+        return jsonify(generic), 200
+
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_expires = now_utc() + RESET_TTL
+    db.session.commit()
+
+    send_email(
+        user.email,
+        "Reset your Kipato password",
+        "Hi {},\n\nUse this code to set a new Kipato password:\n\n{}\n\n"
+        "It expires in one hour. If you did not ask for this, ignore this message "
+        "— your password has not changed."
+        .format(user.full_name, token),
+    )
+
+    response = dict(generic)
+    if current_app.config.get("FLASK_DEBUG"):
+        # Debug builds have no mail server; surface the token so the flow is testable.
+        response["token"] = token
+    return jsonify(response), 200
+
+
+@auth_bp.route("/password/reset", methods=["POST"])
+@limiter.limit(RESET_RATE_LIMIT)
+def reset_password():
+    data = request.get_json() or {}
+    token = (data.get("token") or "").strip()
+    password = data.get("password", "")
+
+    if not token:
+        return jsonify({"error": "token is required"}), 400
+    pwd_err = validate_password(password)
+    if pwd_err:
+        return jsonify({"error": pwd_err}), 400
+
+    user = User.query.filter_by(reset_token=token).first()
+    if user is None:
+        return jsonify({"error": "Invalid or expired reset token"}), 400
+    if not user.reset_expires or user.reset_expires < now_utc():
+        return jsonify({"error": "Invalid or expired reset token"}), 400
+
+    user.password_hash = generate_password_hash(password)
+    user.reset_token = None
+    user.reset_expires = None
+    db.session.commit()
+
+    # Whoever asked for the reset proved control of the mailbox; signing them in
+    # saves a second trip through the login screen.
+    session["user_id"] = user.id
+    session.permanent = True
+
+    return jsonify({
+        "message": "Password updated",
         "user": user.to_dict(include_email=True),
     }), 200

@@ -10,6 +10,7 @@ from flask import Flask, jsonify  # noqa: E402
 from server.config import Config  # noqa: E402
 from server.extensions import cors, db, limiter, migrate  # noqa: E402
 from server.rbac import load_user  # noqa: E402
+from server.utils import ratelimit_storage  # noqa: E402,F401  (registers the storage scheme)
 
 
 def create_app():

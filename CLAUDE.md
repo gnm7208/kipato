@@ -158,3 +158,12 @@ Main branch: `main`. Use feature branches for new work.
    once more than a couple of function instances are warm.
 10. **Demo data is generated**: `server/seed_data.py` is seeded with a fixed
     number so screenshots and demos stay comparable between runs.
+11. **Public route**: `GET /api/statements/shared/<token>` and the `/s/:token`
+    page are deliberately unauthenticated. Anything added to that response is
+    visible to anyone holding the link.
+12. **Email-dependent flows** return 503 when no SMTP host is configured rather
+    than reporting a success that never arrives. Tests use the `mail_enabled`
+    fixture to represent a deployment that can send.
+13. **Rate limiting** uses `server/utils/ratelimit_storage.py` on Vercel so
+    counters are shared between instances; in-process counters would reset on
+    every cold start.

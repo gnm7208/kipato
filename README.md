@@ -18,6 +18,7 @@ with the link can sign in, so treat the demo database as public.
 
 | | |
 |---|---|
+| Source | [github.com/gnm7208/kipato](https://github.com/gnm7208/kipato) |
 | App + API | [Vercel — gnm7208s-projects/kipato](https://vercel.com/gnm7208s-projects/kipato) |
 | Postgres | [Neon — kipato (eu-central-1)](https://console.neon.tech/app/projects/super-frost-00864706) |
 
@@ -25,7 +26,7 @@ with the link can sign in, so treat the demo database as public.
 
 - **One-tap income logging** — faster than a notebook, works with no signal
 - **M-PESA import** — paste one message or import a whole history at once; incoming payments become entries, outgoing ones never do
-- **Exportable income statement** — clean, worker-owned proof of earnings
+- **Shareable income statement** — a revocable, expiring link a SACCO or lender can open with no account
 - **Trends** — average daily/weekly/monthly income, consistency over time
 - **Offline-first** — entries logged without a signal are queued on the phone and synced on reconnect
 
@@ -151,6 +152,22 @@ The parser:
 `frontend/src/lib/mpesa-parser.ts` + `mpesa-bulk.ts` implement the same rules
 against matching test suites; change them together.
 
+## Sharing a statement
+
+A statement is only proof if the worker can hand it to someone, so sharing
+produces a real link:
+
+- **Off by default.** Nothing is public until the worker taps share.
+- **Unguessable** — a 32-byte token, on a rate-limited route.
+- **Expires on its own**, 30 days by default and 180 at most.
+- **Revocable**, and re-sharing rotates the token so an old link dies.
+- **Minimal** — the public view returns the period, the total, the entries and
+  the worker's name and phone. Nothing else about the account is exposed.
+
+The lender opens `/s/<token>`: a printable statement, no account needed. The
+page says plainly that Kipato records what the worker logged and what their
+M-PESA messages confirmed, and does not vouch for entries logged as cash.
+
 ## API Endpoints
 
 Full spec at `/api/docs` (Swagger UI).
@@ -163,6 +180,8 @@ Full spec at `/api/docs` (Swagger UI).
 - `PATCH /api/auth/me` — Update name or email
 - `POST /api/auth/verify/request` — Send an email verification token
 - `POST /api/auth/verify/confirm` — Confirm the token
+- `POST /api/auth/password/forgot` — Start a password reset
+- `POST /api/auth/password/reset` — Set a new password with the token
 
 ### Income
 - `GET /api/income/entries` — List entries (paginated, filterable by date)
@@ -181,6 +200,9 @@ Full spec at `/api/docs` (Swagger UI).
 - `GET /api/statements/` — List statements
 - `POST /api/statements/` — Generate statement for date range
 - `GET /api/statements/<id>` — Get statement with entries
+- `POST /api/statements/<id>/share` — Create a link a lender can open
+- `DELETE /api/statements/<id>/share` — Stop sharing
+- `GET /api/statements/shared/<token>` — **Public**: read a shared statement
 
 ### Admin
 
@@ -225,6 +247,8 @@ Production environment variables (set with `vercel env add … production`):
 | `SECRET_KEY` | Signs session cookies; changing it signs everyone out |
 | `FLASK_DEBUG` | `false` |
 | `VITE_DATA_MODE` | `api`, so the SPA talks to the deployed backend |
+| `SMTP_*` | Optional. Without them, email verification and password reset return 503 rather than pretending to send |
+| `RATELIMIT_STORAGE_URI` | Optional. On Vercel this defaults to the database, because in-process counters reset on every cold start |
 
 `VITE_API_BASE_URL` is deliberately unset: the frontend calls its own origin.
 

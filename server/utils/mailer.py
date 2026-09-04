@@ -13,6 +13,11 @@ from server.config import Config
 logger = logging.getLogger(__name__)
 
 
+def email_is_configured() -> bool:
+    """Whether this deployment can actually deliver mail."""
+    return bool(Config.SMTP_HOST)
+
+
 def send_email(to_address: str, subject: str, body: str) -> bool:
     """Send an email. Returns True when it was handed to an SMTP server."""
     if not to_address:

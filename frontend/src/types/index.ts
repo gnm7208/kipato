@@ -69,6 +69,34 @@ export interface MpesaImport {
   imported_at: string
 }
 
+export interface SharedStatement {
+  statement: {
+    start_date: string
+    end_date: string
+    total_income: number
+    entry_count: number
+    generated_at: string | null
+    expires_at: string | null
+  }
+  worker: {
+    full_name: string
+    phone: string
+    member_since: string | null
+  }
+  entries: Array<{
+    date: string
+    amount: number
+    method: IncomeMethod
+    note: string | null
+  }>
+}
+
+export interface ShareResponse {
+  message: string
+  statement: Statement
+  share_path: string
+}
+
 export interface Statement {
   id: number
   worker_id: number
@@ -77,6 +105,9 @@ export interface Statement {
   total_income: number
   entry_count: number
   generated_at: string
+  share_token?: string | null
+  share_active?: boolean
+  share_expires_at?: string | null
 }
 
 export interface StatementDetail extends Statement {

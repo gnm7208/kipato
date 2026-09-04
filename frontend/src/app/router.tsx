@@ -1,16 +1,27 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { LoadingState } from '../components/ui'
 import { useAuth } from '../features/auth/auth-context'
 import { LoginPage, RegisterPage } from '../features/auth'
 import { AdminShell, AppShell } from '../components/layout'
-import { AdminOverviewPage, AdminWorkerDetailPage, AdminWorkersPage } from '../features/admin'
 import { DashboardPage } from '../features/dashboard/pages/DashboardPage'
-import { ImportsPage } from '../features/mpesa/pages/ImportsPage'
-import { ProfilePage } from '../features/profile/pages/ProfilePage'
-import { RecordsPage } from '../features/income/pages/RecordsPage'
-import { StatementDetailPage } from '../features/statements/pages/StatementDetailPage'
-import { StatementsPage } from '../features/statements/pages/StatementsPage'
-import { TrendsPage } from '../features/trends/pages/TrendsPage'
+
+/*
+ * Only the sign-in screens and the dashboard are worth loading up front. The
+ * rest arrives when a worker actually opens it, which matters on a cheap phone
+ * over a slow connection — charts and the admin desk are the heaviest pieces
+ * here and most sessions never touch them.
+ */
+const RecordsPage = lazy(() => import('../features/income/pages/RecordsPage').then((m) => ({ default: m.RecordsPage })))
+const TrendsPage = lazy(() => import('../features/trends/pages/TrendsPage').then((m) => ({ default: m.TrendsPage })))
+const ImportsPage = lazy(() => import('../features/mpesa/pages/ImportsPage').then((m) => ({ default: m.ImportsPage })))
+const StatementsPage = lazy(() => import('../features/statements/pages/StatementsPage').then((m) => ({ default: m.StatementsPage })))
+const StatementDetailPage = lazy(() => import('../features/statements/pages/StatementDetailPage').then((m) => ({ default: m.StatementDetailPage })))
+const SharedStatementPage = lazy(() => import('../features/statements/pages/SharedStatementPage').then((m) => ({ default: m.SharedStatementPage })))
+const ProfilePage = lazy(() => import('../features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const AdminOverviewPage = lazy(() => import('../features/admin/pages/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })))
+const AdminWorkersPage = lazy(() => import('../features/admin/pages/AdminWorkersPage').then((m) => ({ default: m.AdminWorkersPage })))
+const AdminWorkerDetailPage = lazy(() => import('../features/admin/pages/AdminWorkerDetailPage').then((m) => ({ default: m.AdminWorkerDetailPage })))
 
 function ProtectedRoute() {
   const { status, user } = useAuth()
@@ -41,7 +52,10 @@ function AuthRoute() {
 
 export function AppRouter() {
   return (
+    <Suspense fallback={<LoadingState label="Opening your record" />}>
     <Routes>
+      {/* Public: a lender opens this with no account and no session. */}
+      <Route element={<SharedStatementPage />} path="/s/:token" />
       <Route element={<AuthRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -67,5 +81,6 @@ export function AppRouter() {
       </Route>
       <Route element={<Navigate replace to="/app" />} path="*" />
     </Routes>
+    </Suspense>
   )
 }

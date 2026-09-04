@@ -65,9 +65,18 @@ class Config:
         ).lower() == "true"
         cls.SESSION_COOKIE_SAMESITE = "None" if cross_site else "Lax"
 
-        # In-process rate limiting only counts one instance; point this at Redis
-        # when the API runs on more than one.
-        cls.RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
+        # In-process counters restart with every new instance, so on a
+        # serverless platform they amount to no rate limit at all. Fall back to
+        # the database there unless something better is configured.
+        configured = os.getenv("RATELIMIT_STORAGE_URI")
+        if configured:
+            cls.RATELIMIT_STORAGE_URI = configured
+        elif os.getenv("VERCEL") and database_url.startswith("postgresql"):
+            cls.RATELIMIT_STORAGE_URI = database_url.replace(
+                "postgresql", "postgresql+ratelimit", 1
+            )
+        else:
+            cls.RATELIMIT_STORAGE_URI = "memory://"
 
         cls.SMTP_HOST = os.getenv("SMTP_HOST")
         cls.SMTP_PORT = int(os.getenv("SMTP_PORT", 587))

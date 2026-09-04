@@ -43,6 +43,9 @@ class User(db.Model):
     verification_token = db.Column(db.String(255), nullable=True)
     verification_expires = db.Column(db.DateTime, nullable=True)
 
+    reset_token = db.Column(db.String(255), nullable=True, index=True)
+    reset_expires = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, default=now_utc, nullable=False)
     updated_at = db.Column(db.DateTime, default=now_utc, onupdate=now_utc, nullable=False)
 
@@ -154,11 +157,24 @@ class Statement(db.Model):
     entry_count = db.Column(db.Integer, nullable=False, default=0)
     generated_at = db.Column(db.DateTime, default=now_utc, nullable=False)
 
+    # A statement is only proof if the worker can hand it to someone. Sharing is
+    # off until they turn it on, expires on its own, and can be revoked.
+    share_token = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    shared_at = db.Column(db.DateTime, nullable=True)
+    share_expires_at = db.Column(db.DateTime, nullable=True)
+
     worker = db.relationship("User", back_populates="statements")
     income_entries = db.relationship("IncomeEntry", secondary="statement_entries")
 
-    def to_dict(self) -> dict:
-        return {
+    def is_share_active(self) -> bool:
+        if not self.share_token:
+            return False
+        if self.share_expires_at and self.share_expires_at < now_utc():
+            return False
+        return True
+
+    def to_dict(self, include_share: bool = True) -> dict:
+        data = {
             "id": self.id,
             "worker_id": self.worker_id,
             "start_date": self.start_date.isoformat() if self.start_date else None,
@@ -167,6 +183,14 @@ class Statement(db.Model):
             "entry_count": self.entry_count,
             "generated_at": self.generated_at.isoformat() if self.generated_at else None,
         }
+        if include_share:
+            active = self.is_share_active()
+            data["share_token"] = self.share_token if active else None
+            data["share_active"] = active
+            data["share_expires_at"] = (
+                self.share_expires_at.isoformat() if self.share_expires_at else None
+            )
+        return data
 
     def __repr__(self):
         return f"<Statement {self.start_date} - {self.end_date}>"
