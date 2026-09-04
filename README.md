@@ -4,7 +4,7 @@
 
 ## Live demo
 
-**<https://kipato.vercel.app>**
+### **<https://kipato.vercel.app>**
 
 | Role | Phone | Password |
 |---|---|---|
@@ -16,11 +16,7 @@ the verification desk at `/admin`. The demo carries ten seeded workers with
 several months of history each — all of it generated, none of it real. Anyone
 with the link can sign in, so treat the demo database as public.
 
-| | |
-|---|---|
-| Source | [github.com/gnm7208/kipato](https://github.com/gnm7208/kipato) |
-| App + API | [Vercel — gnm7208s-projects/kipato](https://vercel.com/gnm7208s-projects/kipato) |
-| Postgres | [Neon — kipato (eu-central-1)](https://console.neon.tech/app/projects/super-frost-00864706) |
+Source: [github.com/gnm7208/kipato](https://github.com/gnm7208/kipato)
 
 ## Features
 
@@ -238,6 +234,11 @@ around.
 ```bash
 vercel deploy --prod        # from the repo root
 ```
+
+Pushing to `main` deploys on its own; the command above is for deploying without
+a push. Consoles, for whoever owns the deployment:
+[Vercel project](https://vercel.com/gnm7208s-projects/kipato) ·
+[Neon project](https://console.neon.tech/app/projects/super-frost-00864706).
 
 Production environment variables (set with `vercel env add … production`):
 
