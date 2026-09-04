@@ -77,3 +77,19 @@ def test_an_explicit_setting_wins(monkeypatch):
 def _restore_env():
     yield
     os.environ.pop("VERCEL", None)
+
+
+def test_validate_does_not_leave_postgres_pooling_behind(monkeypatch):
+    """Config is a class, so a previous call's values persist until overwritten."""
+    from server.config import Config
+
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pw@example.test/db")
+    Config.validate()
+    assert "pool_size" in Config.SQLALCHEMY_ENGINE_OPTIONS
+
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    Config.validate()
+
+    # SQLite rejects pool_size outright, so a stale value breaks every later app.
+    assert Config.SQLALCHEMY_ENGINE_OPTIONS == {}
