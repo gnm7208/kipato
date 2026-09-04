@@ -79,11 +79,23 @@ def register_blueprints(app):
 def register_health_check(app):
     @app.route("/api/health")
     def health():
+        # Which rate-limit backend is live is worth surfacing: in-process
+        # counters silently stop limiting anything once there is more than one
+        # instance, and that is invisible from the outside otherwise.
+        storage = "database" if "ratelimit" in (Config.RATELIMIT_STORAGE_URI or "") else "memory"
         try:
             db.session.execute(db.text("SELECT 1"))
-            return jsonify({"status": "healthy", "database": "connected"}), 200
+            return jsonify({
+                "status": "healthy",
+                "database": "connected",
+                "rate_limit_storage": storage,
+            }), 200
         except Exception:
-            return jsonify({"status": "unhealthy", "database": "disconnected"}), 500
+            return jsonify({
+                "status": "unhealthy",
+                "database": "disconnected",
+                "rate_limit_storage": storage,
+            }), 500
 
     @app.route("/api/docs")
     def api_docs():
