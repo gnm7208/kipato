@@ -1,14 +1,14 @@
 /*
  * Kipato service worker.
  *
- * Its only job is making the app itself open without a signal. Data is handled
- * by the app's own offline layer (IndexedDB outbox + read cache), so API calls
- * are deliberately left alone: a stale cached API response would be far more
- * confusing to a worker than a clear "you are offline" state.
+ * Its only job is making the app itself open without a signal. API calls are
+ * deliberately left alone: a stale cached API response would be far more
+ * confusing than a clear "you are offline" state, and the API lives on
+ * another origin anyway.
  */
 
-const CACHE_NAME = 'kipato-shell-v1'
-const APP_SHELL = ['/', '/index.html', '/favicon.svg', '/icons.svg', '/manifest.webmanifest']
+const CACHE_NAME = 'kipato-shell-v2'
+const APP_SHELL = ["/","/index.html","/favicon.svg","/icons.svg","/manifest.webmanifest","/icon-192.png","/icon-512.png"]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
-  // The app's own offline layer owns API data.
+  // API data is never served from this cache.
   if (url.pathname.startsWith('/api/')) return
 
   // Navigations: try the network so a deploy is picked up, fall back to the

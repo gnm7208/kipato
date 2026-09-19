@@ -36,3 +36,16 @@
 - Email verification and password reset need SMTP credentials the deployment
   does not have yet; both refuse with 503 rather than pretending to send.
 - The password reset flow has no UI yet — the endpoints exist and are tested.
+
+## Distribution (app stores, $0 path)
+
+- [x] PWA hardened: PNG + maskable icons, brand mark, Apple meta, offline shell
+- [x] Digital Asset Links + Android signing key + TWA project (`../store-packaging/kipato`)
+- [x] Privacy policy at `/privacy.html`, store listing copy
+- [ ] Deploy (push to `main`) so manifest, icons, assetlinks and privacy page are live
+- [ ] GitHub Release with the signed APK
+- [ ] Microsoft Store listing via PWABuilder (free individual account)
+- [ ] Amazon Appstore / Samsung Galaxy Store (free) with the same APK
+- [ ] Google Play once the $25 registration is paid (12-tester closed test for 14 days first)
+- [ ] In-app "Delete my account" (Play requires a deletion path; email-based for now)
+- [ ] Keep the API warm or move off the free tier before store traffic arrives

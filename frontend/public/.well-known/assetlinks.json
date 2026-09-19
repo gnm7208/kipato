@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gnm7208.kipato",
+      "sha256_cert_fingerprints": ["5D:3C:9C:2E:16:C4:9D:4D:B4:D4:5A:1A:14:CC:E5:2D:C7:46:1F:1F:B7:BB:AE:E7:48:9E:9D:9E:B7:9E:DE:D8"]
+    }
+  }
+]

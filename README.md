@@ -18,6 +18,21 @@ with the link can sign in, so treat the demo database as public.
 
 Source: [github.com/gnm7208/kipato](https://github.com/gnm7208/kipato)
 
+## Install as an app
+
+Kipato is a Progressive Web App. The web build in `frontend/` is also what ships to the app stores — there is no separate mobile codebase.
+
+| Platform | How |
+|---|---|
+| **Android / desktop Chrome** | Open <https://kipato.vercel.app> → browser menu → **Install app** (or **Add to Home screen**). |
+| **Android APK** | Download the latest signed APK from [GitHub Releases](https://github.com/gnm7208/kipato/releases) and open it (allow "install from this source" once). |
+| **Microsoft Store** | Listed as **Kipato** (packaged from the PWA with PWABuilder). |
+| **Google Play / Amazon / Samsung** | Same Android package (`com.gnm7208.kipato`); listings go live per store — check Releases for status. |
+
+Privacy policy: <https://kipato.vercel.app/privacy.html> (also linked from every store listing; deletion requests are handled by email as described there).
+
+**How it works.** `frontend/public/manifest.webmanifest` declares the app (name, colours, PNG + maskable icons), `frontend/public/sw.js` caches the app shell so it opens with no signal (API responses are deliberately never cached), and `frontend/src/lib/register-sw.ts` registers the worker in production builds only. `frontend/public/.well-known/assetlinks.json` links the site to the Android signing key so the Android app opens full-screen without browser chrome; the Android project itself lives outside this repo in `../store-packaging/` (Bubblewrap TWA) and the signing key in `~/.android-signing/` — never commit either.
+
 ## Features
 
 - **One-tap income logging** — faster than a notebook, works with no signal
@@ -25,6 +40,7 @@ Source: [github.com/gnm7208/kipato](https://github.com/gnm7208/kipato)
 - **Shareable income statement** — a revocable, expiring link a SACCO or lender can open with no account
 - **Trends** — average daily/weekly/monthly income, consistency over time
 - **Offline-first** — entries logged without a signal are queued on the phone and synced on reconnect
+- **Installable app** — a PWA with an offline app shell; ships to Android (TWA) and the Microsoft Store from the same codebase, see [Install as an app](#install-as-an-app)
 
 ## Tech Stack
 
