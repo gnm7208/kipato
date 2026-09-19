@@ -1,5 +1,14 @@
+from datetime import date, timedelta
+
 from server.models import IncomeEntry, MpesaImport, Statement, User
-from server.seed_data import DEMO_ADMIN_PHONE, DEMO_PASSWORD, DEMO_WORKER_PHONE, seed_demo
+from server.seed_data import (
+    DEMO_ADMIN_PHONE,
+    DEMO_PASSWORD,
+    DEMO_WORKER_PHONE,
+    REFERENCE_DATE,
+    anchor_date,
+    seed_demo,
+)
 
 
 def test_seed_creates_a_cast_of_workers(app):
@@ -59,5 +68,14 @@ def test_seed_is_deterministic(app):
     total = float(sum(e.amount for e in IncomeEntry.query.all()))
 
     # The fixed seed keeps screenshots and demos comparable between runs.
-    assert total > 0
     assert IncomeEntry.query.count() == 940
+    assert total == 1078020.0
+
+
+def test_anchor_shares_the_reference_weekday():
+    # Which weekday the history ends on decides how many work days fall in each
+    # window, so the anchor must land on the same weekday whatever today is.
+    for day in (date(2026, 9, 4), date(2026, 9, 19), date(2026, 9, 20), date(2027, 3, 3)):
+        anchor = anchor_date(day)
+        assert anchor.weekday() == REFERENCE_DATE.weekday()
+        assert timedelta(0) <= day - anchor < timedelta(days=7)

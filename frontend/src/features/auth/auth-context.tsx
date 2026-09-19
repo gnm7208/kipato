@@ -14,6 +14,7 @@ interface AuthContextValue {
   login: (payload: LoginPayload) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => Promise<void>
+  deleteAccount: (password: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -110,7 +111,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearAuth])
 
-  const value = useMemo(() => ({ user, status, login, register, logout }), [login, logout, register, status, user])
+  const deleteAccount = useCallback(
+    async (password: string) => {
+      setStatus('submitting')
+      try {
+        await repository.auth.deleteAccount(password)
+      } catch (error) {
+        setStatus('authenticated')
+        throw error
+      }
+      // Same hygiene as logout: nothing of the deleted record stays on the phone.
+      await clearOfflineData()
+      clearAuth()
+    },
+    [clearAuth],
+  )
+
+  const value = useMemo(
+    () => ({ user, status, login, register, logout, deleteAccount }),
+    [deleteAccount, login, logout, register, status, user],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

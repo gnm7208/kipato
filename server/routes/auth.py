@@ -144,6 +144,35 @@ def update_me():
     return jsonify({"user": user.to_dict(include_email=True)}), 200
 
 
+@auth_bp.route("/me", methods=["DELETE"])
+@login_required
+@limiter.limit(LOGIN_RATE_LIMIT)
+def delete_me():
+    """Erase the caller's account and every record attached to it.
+
+    App stores require an in-app deletion path, and workers should not have to
+    email anyone to take their data back. The password is required again so a
+    borrowed unlocked phone cannot wipe a record in one tap.
+    """
+    data = request.get_json() or {}
+    password = data.get("password") or ""
+    user = g.current_user
+
+    if not password or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Incorrect password"}), 401
+
+    if user.role and user.role.name == "admin":
+        # The verification desk must always have someone behind it.
+        return jsonify({"error": "Administrator accounts are removed by another administrator"}), 403
+
+    # Entries, imports, statements and share links go with the user via the
+    # delete-orphan cascades on the model.
+    db.session.delete(user)
+    db.session.commit()
+    session.clear()
+    return jsonify({"message": "Account deleted"}), 200
+
+
 @auth_bp.route("/verify/request", methods=["POST"])
 @login_required
 @limiter.limit(VERIFY_RATE_LIMIT)

@@ -34,6 +34,7 @@ export interface KipatoRepository {
     login(payload: LoginPayload): Promise<AuthResponse>
     logout(): Promise<MessageResponse>
     me(): Promise<{ user: User }>
+    deleteAccount(password: string): Promise<MessageResponse>
   }
   income: {
     listEntries(params?: EntryQueryParams): Promise<EntriesResponse>

@@ -14,4 +14,7 @@ export const authApi = {
   async me() {
     return request<{ user: User }>('/api/auth/me')
   },
+  async deleteAccount(password: string) {
+    return request<MessageResponse>('/api/auth/me', { method: 'DELETE', json: { password } })
+  },
 }

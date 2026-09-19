@@ -47,5 +47,5 @@
 - [ ] Microsoft Store listing via PWABuilder (free individual account)
 - [ ] Amazon Appstore / Samsung Galaxy Store (free) with the same APK
 - [ ] Google Play once the $25 registration is paid (12-tester closed test for 14 days first)
-- [ ] In-app "Delete my account" (Play requires a deletion path; email-based for now)
+- [x] In-app "Delete my account" (Profile → Delete my account; `DELETE /api/auth/me`)
 - [ ] Keep the API warm or move off the free tier before store traffic arrives

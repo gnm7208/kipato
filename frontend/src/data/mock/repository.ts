@@ -238,6 +238,12 @@ export function createMockRepository(): KipatoRepository {
         signOut()
         return { message: 'Logged out' }
       },
+      async deleteAccount(password: string) {
+        await pause()
+        if (password !== seededPassword) throw new ApiError('Incorrect password', 401)
+        signOut()
+        return { message: 'Account deleted' }
+      },
       async me() {
         await pause()
         requireSession()

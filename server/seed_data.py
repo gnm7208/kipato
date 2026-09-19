@@ -6,8 +6,8 @@ a boda rider who earns every single day, a fundi paid in irregular lumps, a mama
 mboga whose takings are small but relentless, and someone who has just signed up
 and logged almost nothing.
 
-The generator is deterministic (fixed seed), so the same command always produces
-the same database and screenshots stay comparable.
+The generator is deterministic (fixed seed, weekday-aligned anchor), so the
+same command always produces the same entries and screenshots stay comparable.
 """
 
 import os
@@ -41,6 +41,13 @@ DEMO_WORKER_PHONE = "+254700000001"
 DEMO_ADMIN_PHONE = "+254700000002"
 
 SEED = 20260904
+
+# The generator walks backwards from an anchor day, skipping the weekdays each
+# worker rests. Which weekday the anchor falls on therefore decides how many
+# entries exist and which random draw each one gets, so the anchor is pinned to
+# the weekday of the date the seed was tuned against. Every run yields the same
+# entries; only their dates slide forward, a week at a time.
+REFERENCE_DATE = date(2026, 9, 4)
 
 # Each worker is a different shape of informal income.
 WORKER_PROFILES = [
@@ -198,7 +205,7 @@ def seed_demo(verbose: bool = True):
 
     rng = random.Random(SEED)
     password_hash = generate_password_hash(DEMO_PASSWORD)
-    today = date.today()
+    today = anchor_date()
 
     admin = User(
         phone=DEMO_ADMIN_PHONE,
@@ -242,6 +249,12 @@ def seed_demo(verbose: bool = True):
         print("  worker: {} / {}".format(DEMO_WORKER_PHONE, DEMO_PASSWORD))
         print("  admin:  {} / {}".format(DEMO_ADMIN_PHONE, DEMO_PASSWORD))
         print("  every seeded worker uses the same password: {}".format(DEMO_PASSWORD))
+
+
+def anchor_date(today=None):
+    """The most recent day on or before today that shares REFERENCE_DATE's weekday."""
+    today = today or date.today()
+    return today - timedelta(days=(today.weekday() - REFERENCE_DATE.weekday()) % 7)
 
 
 def _build_entries(worker, profile, today, rng):

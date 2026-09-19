@@ -40,6 +40,7 @@ Privacy policy: <https://kipato.vercel.app/privacy.html> (also linked from every
 - **Shareable income statement** — a revocable, expiring link a SACCO or lender can open with no account
 - **Trends** — average daily/weekly/monthly income, consistency over time
 - **Offline-first** — entries logged without a signal are queued on the phone and synced on reconnect
+- **Delete my account** — password-confirmed, in-app, erases every entry, import, statement and share link (required by app stores)
 - **Installable app** — a PWA with an offline app shell; ships to Android (TWA) and the Microsoft Store from the same codebase, see [Install as an app](#install-as-an-app)
 
 ## Tech Stack
@@ -190,6 +191,7 @@ Full spec at `/api/docs` (Swagger UI).
 - `POST /api/auth/logout` — Logout worker
 - `GET /api/auth/me` — Get current user profile
 - `PATCH /api/auth/me` — Update name or email
+- `DELETE /api/auth/me` — Delete own account (password required; erases every record)
 - `POST /api/auth/verify/request` — Send an email verification token
 - `POST /api/auth/verify/confirm` — Confirm the token
 - `POST /api/auth/password/forgot` — Start a password reset

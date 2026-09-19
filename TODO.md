@@ -36,4 +36,4 @@
 - [ ] Push PWA/store changes and confirm `https://kipato.vercel.app/.well-known/assetlinks.json` returns JSON
 - [ ] Upload signed APK to GitHub Releases (v1.0.0)
 - [ ] Submit to Microsoft Store via PWABuilder
-- [ ] In-app account deletion
+- [x] In-app account deletion

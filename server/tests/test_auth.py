@@ -258,3 +258,31 @@ def test_password_reset_refuses_rather_than_pretending_without_a_mailer(client):
     response = client.post("/api/auth/password/forgot", json={"phone": "+254700000001"})
 
     assert response.status_code == 503
+
+
+def _register_and_login(client, phone="+254700000001", password="securepassword123"):
+    client.post("/api/auth/register", json={"phone": phone, "full_name": "Test Worker", "password": password})
+    client.post("/api/auth/login", json={"phone": phone, "password": password})
+
+
+def test_delete_account_requires_the_password(client):
+    _register_and_login(client)
+    response = client.delete("/api/auth/me", json={"password": "not-it"})
+    assert response.status_code == 401
+    # Still signed in, nothing deleted.
+    assert client.get("/api/auth/me").status_code == 200
+
+
+def test_delete_account_removes_user_and_their_records(client):
+    _register_and_login(client)
+    client.post("/api/income/entries", json={"amount": 500, "method": "cash", "date": "2026-09-01"})
+
+    response = client.delete("/api/auth/me", json={"password": "securepassword123"})
+    assert response.status_code == 200
+
+    # Session is gone and the phone number is free to register again.
+    assert client.get("/api/auth/me").status_code == 401
+    assert client.post("/api/auth/login", json={"phone": "+254700000001", "password": "securepassword123"}).status_code == 401
+    assert client.post("/api/auth/register", json={
+        "phone": "+254700000001", "full_name": "Fresh Start", "password": "securepassword123",
+    }).status_code == 201
