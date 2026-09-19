@@ -268,7 +268,7 @@ def _register_and_login(client, phone="+254700000001", password="securepassword1
 def test_delete_account_requires_the_password(client):
     _register_and_login(client)
     response = client.delete("/api/auth/me", json={"password": "not-it"})
-    assert response.status_code == 401
+    assert response.status_code == 403, "must not be 401 — the client would sign the user out"
     # Still signed in, nothing deleted.
     assert client.get("/api/auth/me").status_code == 200
 

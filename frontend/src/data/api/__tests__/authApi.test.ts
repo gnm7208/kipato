@@ -23,11 +23,11 @@ describe('authApi.deleteAccount', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ password: 'securepassword123' })
   })
 
-  it('surfaces a wrong password as a 401 ApiError so the page can say so', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse({ error: 'Incorrect password' }, 401))
+  it('surfaces a wrong password as a 403 ApiError so the page can say so', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse({ error: 'Incorrect password' }, 403))
 
     const failure = await authApi.deleteAccount('nope').catch((error: unknown) => error)
     expect(failure).toBeInstanceOf(ApiError)
-    expect(failure).toMatchObject({ status: 401 })
+    expect(failure).toMatchObject({ status: 403 })
   })
 })

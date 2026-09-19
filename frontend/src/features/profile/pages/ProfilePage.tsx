@@ -34,7 +34,7 @@ export function ProfilePage() {
       navigate('/login', { replace: true })
     } catch (error) {
       setConfirmingDelete(false)
-      setDeleteError(error instanceof ApiError && error.status === 401 ? 'That password is not right.' : 'Could not delete your account. Check your connection and try again.')
+      setDeleteError(error instanceof ApiError && error.status === 403 ? 'That password is not right.' : 'Could not delete your account. Check your connection and try again.')
     }
   }
 

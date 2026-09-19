@@ -159,7 +159,9 @@ def delete_me():
     user = g.current_user
 
     if not password or not check_password_hash(user.password_hash, password):
-        return jsonify({"error": "Incorrect password"}), 401
+        # 403, not 401: the session is valid, only the confirmation failed, and
+        # the client treats a 401 as an expired session and signs the user out.
+        return jsonify({"error": "Incorrect password"}), 403
 
     if user.role and user.role.name == "admin":
         # The verification desk must always have someone behind it.
