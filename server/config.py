@@ -14,6 +14,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = None
     RATELIMIT_STORAGE_URI = None
+    TRUST_PROXY = False
     FLASK_DEBUG = None
     FLASK_HOST = None
     FLASK_PORT = None
@@ -69,6 +70,13 @@ class Config:
             "SESSION_COOKIE_SECURE", "false"
         ).lower() == "true"
         cls.SESSION_COOKIE_SAMESITE = "None" if cross_site else "Lax"
+
+        # Behind a CDN the peer address is an edge node, not the caller, so
+        # every request would otherwise look like a different client — and a
+        # per-IP rate limit would never count past one.
+        cls.TRUST_PROXY = os.getenv(
+            "TRUST_PROXY", "true" if os.getenv("VERCEL") else "false"
+        ).lower() == "true"
 
         # In-process counters restart with every new instance, so on a
         # serverless platform they amount to no rate limit at all. Fall back to

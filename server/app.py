@@ -6,6 +6,7 @@ if _project_dir not in sys.path:
     sys.path.insert(0, _project_dir)
 
 from flask import Flask, jsonify  # noqa: E402
+from werkzeug.middleware.proxy_fix import ProxyFix  # noqa: E402
 
 from server.config import Config  # noqa: E402
 from server.extensions import cors, db, limiter, migrate  # noqa: E402
@@ -18,6 +19,11 @@ def create_app():
 
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    if Config.TRUST_PROXY:
+        # One hop: the platform's proxy. It overwrites the client's own
+        # X-Forwarded-For, so the last entry is the address to trust.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     db.init_app(app)
     migrate.init_app(app, db)

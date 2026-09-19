@@ -93,3 +93,31 @@ def test_validate_does_not_leave_postgres_pooling_behind(monkeypatch):
 
     # SQLite rejects pool_size outright, so a stale value breaks every later app.
     assert Config.SQLALCHEMY_ENGINE_OPTIONS == {}
+
+
+def test_client_address_comes_from_the_proxy_when_trusted(monkeypatch):
+    """Behind a CDN, per-IP limits only work if the forwarded address is used."""
+    monkeypatch.setenv("TRUST_PROXY", "true")
+    app = _app_with(monkeypatch, DATABASE_URL="sqlite:///:memory:")
+
+    @app.route("/whoami")
+    def whoami():
+        from flask import request
+        return {"ip": request.remote_addr}
+
+    response = app.test_client().get("/whoami", headers={"X-Forwarded-For": "41.90.1.1"})
+    assert response.get_json()["ip"] == "41.90.1.1"
+
+
+def test_forwarded_headers_are_ignored_when_not_behind_a_proxy(monkeypatch):
+    monkeypatch.setenv("TRUST_PROXY", "false")
+    app = _app_with(monkeypatch, DATABASE_URL="sqlite:///:memory:")
+
+    @app.route("/whoami")
+    def whoami():
+        from flask import request
+        return {"ip": request.remote_addr}
+
+    # Trusting this without a proxy in front would let anyone forge their IP.
+    response = app.test_client().get("/whoami", headers={"X-Forwarded-For": "41.90.1.1"})
+    assert response.get_json()["ip"] != "41.90.1.1"
